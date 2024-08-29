@@ -238,6 +238,20 @@ cards:
     aspect_ratio: 100%
 ```
 
+# Lovelace Card with Emojis, omitting unavailable lines and jinja calculations for status
+```markdown
+      content: >-
+        ✈️ **Flights in area:** {{ states('sensor.flightradar24_current_in_area') }} {% set data = state_attr('sensor.flightradar24_current_in_area', 'flights') %} 
+        
+        {% for flight in data %}
+          ✈️**{{ flight.aircraft_registration }}** ({{ flight.flight_number }}) 
+          🛠️{{ flight.aircraft_model }} - 🏢{{ flight.airline_short }}
+          🔼{{ flight.altitude }} ft{%if flight.altitude > 0 %} ({{(flight.altitude * 0.3048)| round(0)}} m){% endif%} |🏎️{{ flight.ground_speed }} kts{%if flight.ground_speed > 0 %} ({{(flight.ground_speed * 1.852)| round(0)}} km/h){% endif%}
+          {% if flight.airport_origin_country_code or flight.airport_destination_country_code %}{% if flight.airport_origin_country_code %}<img src="https://flagsapi.com/{{ flight.airport_origin_country_code }}/shiny/16.png" title="{{ flight.airport_origin_country_name }}"/>{% endif %} {{ flight.airport_origin_city }} -> {% if flight.airport_destination_country_code %}<img src="https://flagsapi.com/{{ flight.airport_destination_country_code }}/shiny/16.png" title="{{ flight.airport_destination_country_name }}"/>{% endif %} {{ flight.airport_destination_city }}{% endif %}
+          {% if flight.time_scheduled_departure %}🕒{{ flight.time_scheduled_departure | timestamp_custom('%H:%M') }} {% endif %}{% if flight.time_scheduled_arrival %}-> {{ flight.time_scheduled_arrival | timestamp_custom('%H:%M')}} {% if flight.time_estimated_arrival is not none %}(🎯{{ flight.time_estimated_arrival | timestamp_custom('%H:%M') }}) ⌚{{ ((flight.time_estimated_arrival - flight.time_scheduled_departure) // 3600) }}:{% set minutes = ((flight.time_estimated_arrival - flight.time_scheduled_departure) % 3600) // 60 %}{{ '0' if minutes < 10 else '' }}{{ minutes }} ⌛{{ ((now().timestamp() | int - flight.time_scheduled_departure) * 100 / (flight.time_estimated_arrival - flight.time_scheduled_departure)) | round(0) }}%{% set remaining_seconds = flight.time_estimated_arrival - now().timestamp() | int %}{% set remaining_hours = remaining_seconds // 3600 %}{% set remaining_minutes = (remaining_seconds % 3600) // 60 %} ➡️{{ remaining_hours }}:{{ '0' if remaining_minutes < 10 else '' }}{{ remaining_minutes }}{% endif %}{% endif %}
+        {% endfor %}
+```
+
 ## Database decrease
 To decrease data stored by [Recorder](https://www.home-assistant.io/integrations/recorder/) in database add following lines to your `configuration.yaml` file:
 ```yaml
